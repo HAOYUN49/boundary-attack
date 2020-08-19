@@ -1,13 +1,14 @@
-from __future__ import print_function
-try:
-	raw_input
-except:
-	raw_input = input
+#from __future__ import print_function
+#try:
+#	raw_input
+#except:
+#	raw_input = input
 
 import numpy as np
+import tensorflow as tf
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
-from keras.datasets import mnist
+from tensorflow.keras.datasets import mnist
 import pickle
 import time
 import datetime
@@ -15,9 +16,9 @@ import os
 from PIL import Image
 import json
 
-from keras.applications.resnet50 import ResNet50
-from keras.preprocessing import image
-from keras.applications.resnet50 import preprocess_input, decode_predictions
+from tensorflow.keras.applications.resnet50 import ResNet50
+from tensorflow.keras.preprocessing import image
+from tensorflow.keras.applications.resnet50 import preprocess_input, decode_predictions
 
 
 def orthogonal_perturbation(delta, prev_sample, target_sample):
@@ -67,7 +68,7 @@ def get_converted_prediction(sample, classifier):
 	return label
 
 def draw(sample, classifier, folder):
-	label = get_converted_prediction(np.copy(sample), classifier)
+	label = decode_predictions(classifier.predict(sample), top=1)[0][0][1] #get_converted_prediction(np.copy(sample), classifier)
 	sample = sample.reshape(224, 224, 3)
 	# Reverse preprocessing, see https://github.com/keras-team/keras/blob/master/keras/applications/imagenet_utils.py
 	mean = [103.939, 116.779, 123.68]
@@ -105,7 +106,8 @@ def boundary_attack():
 	draw(np.copy(initial_sample), classifier, folder)
 	attack_class = np.argmax(classifier.predict(initial_sample))
 	target_class = np.argmax(classifier.predict(target_sample))
-
+	#initial_sample = preprocess('images/original/doge.png')
+        #target_sample = preprocess('images/original/grumpy_cat.png')
 	adversarial_sample = initial_sample
 	n_steps = 0
 	n_calls = 0
@@ -158,8 +160,8 @@ def boundary_attack():
 				adversarial_sample = trial_sample
 				epsilon /= 0.5
 				break
-			elif e_step > 500:
-					break
+			#elif e_step > 500:
+			#		break
 			else:
 				epsilon *= 0.5
 		n_steps += 1
@@ -168,7 +170,7 @@ def boundary_attack():
 			print("{} steps".format(n_steps))
 			draw(np.copy(adversarial_sample), classifier, folder)
 		diff = np.mean(get_diff(adversarial_sample, target_sample))
-		if diff <= 1e-3 or e_step > 500:
+		if diff <= 1e-3: #or e_step > 500:
 			print("{} steps".format(n_steps))
 			print("Mean Squared Error: {}".format(diff))
 			draw(np.copy(adversarial_sample), classifier, folder)
